@@ -5,6 +5,6 @@ data/
 *.parquet
 *.faiss
 *.pt
-ode_modules/
+node_modules/
 .venv/
 __pycache__/

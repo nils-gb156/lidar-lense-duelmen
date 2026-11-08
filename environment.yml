@@ -1,0 +1,38 @@
+# Conda environment for pipeline and backend (LiDAR Lens Dülmen)
+#
+# Create:   conda env create -f environment.yml
+# Activate: conda activate pcsearch
+# PROJ fix (local PostGIS sets PROJ_LIB/PROJ_DATA globally):
+#           conda env config vars set PROJ_LIB= PROJ_DATA= -n pcsearch
+#
+# PyTorch is installed via pip from the official PyTorch index (CUDA 13.2 build,
+# matches the local NVIDIA driver, CUDA <= 13.2). It is listed in the pip section
+# so that open_clip_torch does not pull a CPU-only torch from PyPI.
+name: pcsearch
+channels:
+  - conda-forge
+channel_priority: strict
+dependencies:
+  - python=3.11
+  - pip
+  # point clouds
+  - pdal
+  - python-pdal
+  - untwine
+  # geodata
+  - geopandas
+  - pyarrow
+  - rasterio
+  - osmnx
+  # search / backend
+  - faiss-cpu
+  - fastapi
+  - uvicorn
+  # notebooks
+  - jupyterlab
+  - pip:
+      - --extra-index-url https://download.pytorch.org/whl/cu132
+      - torch==2.15.0
+      - torchvision
+      - laspy[lazrs]
+      - open_clip_torch

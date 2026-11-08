@@ -1,0 +1,10 @@
+data/
+*.laz
+*.copc.laz
+*.jp2
+*.parquet
+*.faiss
+*.pt
+ode_modules/
+.venv/
+__pycache__/

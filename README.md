@@ -79,8 +79,8 @@ docs/              results and figures
 ```bash
 conda env create -f environment.yml
 conda activate pcsearch
-# then install PyTorch with CUDA using the command from https://pytorch.org/get-started/locally
 ```
+`environment.yml` already installs PyTorch with CUDA 13.2 from the PyTorch index. For a different CUDA version, change the `--extra-index-url` in the pip section (see https://pytorch.org/get-started/locally).
 
 On systems with a local PostGIS installation, clear the PROJ variables inside the environment:
 ```bash
@@ -89,17 +89,35 @@ conda env config vars set PROJ_LIB= PROJ_DATA=
 
 **Data**
 
-All data is stored locally under `data/` and is not part of the repository. Download scripts will be provided in `pipeline/01_download/`.
+All data is stored locally under `data/` and is not part of the repository. Download the point clouds and orthophotos for Dülmen (229 tiles, about 23 GB):
+```bash
+python pipeline/01_download/download_tiles.py all
+```
+Details on the tile list, file naming and options: [pipeline/01_download/README.md](pipeline/01_download/README.md).
 
 ## Data sources
 
 | Data | Source | Licence |
 |---|---|---|
-| Airborne laser scanning point clouds (3D-Messdaten NW) | [Geobasis NRW / Open.NRW](https://ckan.open.nrw.de/dataset/ef0b51eb-31ea-49dd-a1c3-42e565c2b1a1) | to be confirmed |
-| Digital orthophotos (Digitale Orthophotos NW) | [Geobasis NRW / Open.NRW](https://ckan.open.nrw.de/dataset/digitale-orthophotos-nw-geo-nrw) | to be confirmed |
+| Airborne laser scanning point clouds (3D-Messdaten NW) | [Geobasis NRW / Open.NRW](https://ckan.open.nrw.de/dataset/ef0b51eb-31ea-49dd-a1c3-42e565c2b1a1) | [Datenlizenz Deutschland – Zero – Version 2.0](https://www.govdata.de/dl-de/zero-2-0) |
+| Digital orthophotos (Digitale Orthophotos NW) | [Geobasis NRW / Open.NRW](https://ckan.open.nrw.de/dataset/56fb584b-10cf-4009-a405-0bef06bb3e00) | [Datenlizenz Deutschland – Zero – Version 2.0](https://www.govdata.de/dl-de/zero-2-0) |
 | Reference objects | [OpenStreetMap](https://www.openstreetmap.org) | ODbL, © OpenStreetMap contributors |
 
-Data details (tile size, CRS, acquisition year) will be documented here after the data analysis.
+Known data details:
+
+| | LAZ (3D-Messdaten NW) | DOP (DOP10 RGBI) |
+|---|---|---|
+| Tile size | 1 km × 1 km | 1 km × 1 km |
+| CRS | EPSG:25832 (ETRS89 / UTM 32N) | EPSG:25832 |
+| Format | LAZ, LAS 1.2, point format 1 | JPEG2000, 4 bands (RGB + NIR), 0.1 m |
+| Tiles for Dülmen | 229 (15.8 GB) | 229 (7.5 GB) |
+| Height reference | DHHN2016 (normal heights) | – |
+| Acquisition date | 2024: 203 tiles 9–17 March, 26 tiles 1 December | 2026: 189 tiles 7 April (flight 1463/26), 35 tiles 5 March (1464/26); 2024: 5 tiles 26 June |
+| Accuracy (official) | 0.30 m horizontal, 0.15 m vertical, 4 pts/m² nominal | 0.10 m ground pixel size |
+
+Source of the acquisition dates: per-tile metadata `3dm_meta.zip` and `dop_meta.zip` next to the `index.json` files on OpenGeodata NRW (state 2026-10-29 / 2026-10-21).
+
+**Time gap:** the point clouds are from 2024 and most orthophotos are from 2026. Changes in between (new buildings, solar parks, felled forest) make image and point cloud disagree for some patches. This matters for fine-tuning, since the CLIP image embeddings are the training target.
 
 ## Related work
 

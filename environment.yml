@@ -23,6 +23,7 @@ dependencies:
   - geopandas
   - pyarrow
   - rasterio
+  - libgdal-jp2openjpeg   # GDAL JPEG2000 driver plugin, needed for the DOP .jp2 files
   - osmnx
   # search / backend
   - faiss-cpu

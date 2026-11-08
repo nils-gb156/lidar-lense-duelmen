@@ -41,7 +41,8 @@ Still to be documented in README once checked: tile size, CRS/EPSG, height refer
 - PyTorch with CUDA installed via pip from the PyTorch index (`--extra-index-url https://download.pytorch.org/whl/cu132`, pinned in the pip section of `environment.yml` so open_clip_torch does not pull a CPU-only torch). Verified: Python 3.11, torch 2.15.0+cu132, CUDA available on the MX550.
 - Activate: `conda activate pcsearch`
 - Encoder repos pin old stacks (ULIP: Python 3.7, torch 1.10; OpenShape: Python 3.9, torch 1.12, MinkowskiEngine/DGL). `pcsearch` stays on Python 3.11. Encoder code runs either in this environment with relaxed pins (pure-PyTorch backbones) or in a separate environment on Colab. Decide in the issue "Choose the encoder".
-- PROJ conflict with a local PostGIS installation: `PROJ_LIB` and `PROJ_DATA` must be empty in the environment (`conda env config vars set PROJ_LIB= PROJ_DATA=`). If rasterio/PDAL report an incompatible `proj.db`, check this first.
+- PROJ conflict with a local PostGIS installation: `PROJ_LIB` and `PROJ_DATA` must be empty in the environment (`conda env config vars set PROJ_LIB= PROJ_DATA=`). If rasterio/PDAL report an incompatible `proj.db`, check this first. The fix only applies in an activated env or via `conda run -n pcsearch ...`; calling `anaconda3\envs\pcsearch\python.exe` directly brings the error back.
+- DOP JPEG2000 needs the GDAL plugin `libgdal-jp2openjpeg` (in `environment.yml`).
 - Local GPU: NVIDIA GeForce MX550 with 2 GB VRAM. Enough for inference and small tests, NOT for fine-tuning. Fine-tuning runs on Colab or a university GPU.
 - Web app: Node.js LTS and pnpm (Open Pioneer Trails conventions).
 - OS: Windows, PowerShell.

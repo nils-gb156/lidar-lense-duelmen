@@ -20,6 +20,7 @@ dofaclip    DOFA-CLIP fork of open_clip   earthflow/GeoLB-ViT-B-16-SigLIP-All-EO
 The licences of the pretrained weights have NOT been checked yet (CLAUDE.md rule 8).
 """
 
+import http.client
 import os
 import urllib.request
 import zipfile
@@ -170,22 +171,45 @@ def load_remoteclip(variant: str, mode: str, device: str) -> Backbone:
     return _finish("remoteclip", variant, model, preprocess, open_clip.get_tokenizer(arch), info, mode, device)
 
 
+def _download(url: str, dest: Path, retries: int = 30) -> None:
+    """Download with resume: a dropped connection continues from the .part file."""
+    part = dest.with_name(dest.name + ".part")
+    with urllib.request.urlopen(urllib.request.Request(url, method="HEAD"), timeout=60) as r:
+        total = int(r.headers["Content-Length"])
+    next_report = 0
+    for attempt in range(1, retries + 1):
+        done = part.stat().st_size if part.exists() else 0
+        if done == total:
+            break
+        try:
+            req = urllib.request.Request(url, headers={"Range": f"bytes={done}-"})
+            with urllib.request.urlopen(req, timeout=60) as r:
+                if done and r.status != 206:  # server ignored the range request, start over
+                    done = 0
+                with open(part, "ab" if done else "wb") as f:
+                    while chunk := r.read(1 << 20):
+                        f.write(chunk)
+                        done += len(chunk)
+                        if done >= next_report:
+                            print(f"  {done / 1e9:.1f} / {total / 1e9:.1f} GB")
+                            next_report = done + 250_000_000
+        except (OSError, http.client.HTTPException) as e:
+            print(f"  connection lost ({e}), resuming (attempt {attempt}/{retries})")
+    size = part.stat().st_size if part.exists() else 0
+    if size != total:
+        raise RuntimeError(f"download incomplete: {size} of {total} bytes; run the script again to resume")
+    os.replace(part, dest)
+
+
 def _skyclip_checkpoint(name: str) -> Path:
     out_dir = WEIGHTS_DIR / "skyclip" / name
     found = sorted(out_dir.rglob("*.pt"))
     if not found:
         out_dir.mkdir(parents=True, exist_ok=True)
         zip_path = out_dir.with_suffix(".zip")
-        part = zip_path.with_name(zip_path.name + ".part")
         url = SKYCLIP_URL.format(name=name)
         print(f"downloading {url} (several GB)")
-
-        def progress(blocks, block_size, total):
-            if blocks % 2000 == 0:
-                print(f"  {blocks * block_size / 1e9:.1f} / {total / 1e9:.1f} GB")
-
-        urllib.request.urlretrieve(url, part, progress)
-        os.replace(part, zip_path)
+        _download(url, zip_path)
         with zipfile.ZipFile(zip_path) as z:
             z.extractall(out_dir.parent)
         zip_path.unlink()
@@ -214,7 +238,7 @@ def load_dofaclip(variant: str, mode: str, device: str) -> Backbone:
             raise RuntimeError(
                 "DOFA-CLIP needs the DOFA-CLIP fork of open_clip, which replaces the normal open_clip. "
                 "Use a separate environment:  git clone https://github.com/xiong-zhitong/DOFA-CLIP  and  "
-                "pip install -e DOFA-CLIP/open_clip transformers sentencepiece"
+                "pip install -e DOFA-CLIP/open_clip transformers sentencepiece einops"
             ) from e
         raise
     tokenizer = open_clip.get_tokenizer(repo)

@@ -11,7 +11,7 @@ Do NOT install it into `pcsearch`. Use a separate environment (or Colab):
     conda create -n dofaclip --clone pcsearch      # or any environment with torch, geopandas, pillow
     conda activate dofaclip
     git clone https://github.com/xiong-zhitong/DOFA-CLIP
-    pip install -e DOFA-CLIP/open_clip transformers sentencepiece
+    pip install -e DOFA-CLIP/open_clip transformers sentencepiece einops
 
 Output: data/embeddings/dop_image_embeddings_dofaclip_vitb16.npz (+ .meta.json)
 See embed_common.py for input, output and resume behaviour.

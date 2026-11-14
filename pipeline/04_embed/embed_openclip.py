@@ -17,4 +17,4 @@ Usage:
 from embed_common import run
 
 if __name__ == "__main__":
-    run("openclip", "vitb32", __doc__)
+    run("openclip", "vith14", __doc__)

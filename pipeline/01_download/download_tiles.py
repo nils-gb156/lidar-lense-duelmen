@@ -1,7 +1,9 @@
 """Download LAZ and/or DOP tiles listed in tiles_duelmen.csv.
 
 - LAZ -> data/raw/laz/   (issue #5)
-- DOP -> data/raw/dop/   (issue #6)
+- DOP -> data/raw/dop/   (issue #6), flight year as chosen in make_tile_list.py
+  (default 2024, same year as the LiDAR). DOP URLs come from the dop_url
+  column, because the tiles live in different folders (hist / akt).
 
 Re-runnable: files that already exist with the expected size (from the
 index, stored in the CSV) are skipped. Downloads go to a .part file first
@@ -41,7 +43,8 @@ DATASETS = {
         "out_dir": REPO / "data/raw/laz",
     },
     "dop": {
-        "base_url": "https://www.opengeodata.nrw.de/produkte/geobasis/lusat/akt/dop/dop_jp2_f10/",
+        "base_url": "https://www.opengeodata.nrw.de/produkte/geobasis/lusat/akt/dop/dop_jp2_f10/",  # only if dop_url is empty
+        "url_col": "dop_url",
         "file_col": "dop_file",
         "size_col": "dop_size",
         "out_dir": REPO / "data/raw/dop",
@@ -74,7 +77,7 @@ def load_jobs(dataset: str, tile_list: Path) -> list[Job]:
             jobs.append(Job(
                 dataset=dataset,
                 name=name,
-                url=cfg["base_url"] + name,
+                url=(row.get(cfg.get("url_col", ""), "") or "").strip() or cfg["base_url"] + name,
                 size=int(row[cfg["size_col"]]),
                 path=cfg["out_dir"] / name,
             ))

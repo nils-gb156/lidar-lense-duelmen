@@ -242,6 +242,9 @@ def load_dofaclip(variant: str, mode: str, device: str) -> Backbone:
             ) from e
         raise
     tokenizer = open_clip.get_tokenizer(repo)
+    inner = getattr(tokenizer, "tokenizer", None)
+    if inner is not None and not hasattr(inner, "batch_encode_plus"):
+        inner.batch_encode_plus = inner.__call__  # the fork still calls it, transformers 5 removed it
     info = {**_base_info(), "clip_arch": "dofa_vit_base_patch16_siglip_224", "clip_pretrained": repo,
             "weights_source": "huggingface.co/earthflow/GeoLB-ViT-B-16-SigLIP-All-EO",
             "wavelengths_um": DOFA_WAVELENGTHS_UM, "note": "DOFA-CLIP fork of open_clip"}

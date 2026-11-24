@@ -51,40 +51,36 @@ OUT_DIR = EMB_DIR / "compare"
 
 PROMPT_TEMPLATE = "an aerial photo of {}"
 QUERIES = [
-    # 1. Controls: should work for every model. If one fails here, check its loading code.
+    # area-covering, visible from above
     "forest",
-    "parking lot",
-    "roundabout",
-    "solar park",
+    "farmland",
     "lake",
-
-    # 2. Discriminative objects: where the backbones should differ
-    "church",
+    "parking lot",
+    "solar park",
     "cemetery",
-    "graveyard",              # synonym pair with "cemetery": tests text robustness
-    "playground",
-    "swimming pool",
+    "allotment gardens",
+    "construction site",
+    # objects with a clear shape from above
+    "roundabout",
     "tennis court",
     "football field",
-    "allotment gardens",
+    "swimming pool",
+    "playground",
     "greenhouse",
-    "construction site",
-
-    # 3. Defined by height: hard in DOP, important later for the lidar model
-    "wind turbine",
-    "church tower",
-    "high-rise building",
+    "railway tracks",
+    "industrial building",
+    # defined by height: weak in the DOP, relevant for the lidar model later
     "power line pylon",
-
-    # 4. Compositional / attributes: is the model more than a bag of words?
+    "wind turbine",
+    "church",
+    # descriptions without a fixed class
+    "farm with silos",
     "house with solar panels on the roof",
-    "building near lake",
-    "large industrial building with flat roof",
-    "railway station platform",
-
-    # 5. Negative controls: probably absent from your area
-    "corn maze",
-    "airport runway",
+    "large flat roof",
+    "biogas plant",
+    # synonyms of queries above: is the ranking robust to the wording?
+    "graveyard",
+    "soccer pitch",
 ]
 
 TOP_K = 10

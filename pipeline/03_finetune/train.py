@@ -344,10 +344,11 @@ def main() -> None:
                       f"| first batch after {t_run - t0:.0f} s (worker start)", flush=True)
                 continue
             n_seen += len(pts)
-            if step % 50 == 0 or step == steps_per_epoch - 1:
+            if step % 10 == 0 or step == steps_per_epoch - 1:
                 el = time.time() - t_run
+                mem = f", GPU memory peak {torch.cuda.max_memory_allocated() / 1e9:.1f} GB" if pin else ""
                 print(f"  epoch {epoch} step {step + 1}/{steps_per_epoch} loss {np.mean(losses[-50:]):.4f} "
-                      f"| {n_seen / el:.1f} patches/s", flush=True)
+                      f"| {n_seen / el:.1f} patches/s{mem}", flush=True)
         t_train = time.time() - t0
 
         t1 = time.time()

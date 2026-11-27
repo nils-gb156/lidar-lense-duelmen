@@ -2,6 +2,15 @@
 
 Newest results at the top of each section. All results so far are for the **teacher side** (CLIP on DOP); no point cloud encoder has been trained yet.
 
+## 2026-11-27 – Training script test runs on the laptop (#22, not a training result)
+Script `pipeline/03_finetune/train.py` with `dataset.py`; MX550, bf16, only 64–512 train patches, 2–4 epochs. Purpose: check that the loop, validation, checkpoints and resume work. The metrics of these tiny runs say nothing about the model.
+
+- **Mean-vector reference** (always predict the mean train target), all val patches: loss |y − t|² = 0.164, cosine 0.914. The GeoRSCLIP DOP vectors share a large common direction, so a high cosine to the own target is reached without learning anything about the patch. Only val loss below about 0.16 and matching recall@k above chance show real learning.
+- **New head:** the backbone features have a norm of about 190 (mean over 16 val patches). A plain randomly initialised linear head started with loss 14 (zero vector = 1.0). Now LayerNorm(512) → Linear(512, 1024) with the linear layer initialised to zero: the loss starts at exactly 1.0.
+- **Head learning rate:** 1e-3 made the loss jump from 1.0 to 3.4 in the first head-only epoch; 1e-4 and 3e-5 decrease steadily. Defaults now: head 1e-4, backbone 2e-5, first epoch head only, cosine schedule with 1 epoch warmup (starting values, not tuned).
+- **Speed on the MX550, batch 4–8:** about 12 patches/s with frozen backbone, about 3 patches/s with full fine-tuning (≈ 4.5 h per epoch of 50,020 patches): the laptop is only for tests, training runs on the training PC.
+- With 512 train patches the model overfits within 2 epochs (train loss 0.10, val 0.195 > mean-vector reference 0.179), as expected.
+
 ## 2026-11-27 – Point arrays with height above ground for all patches (#10, #12)
 Script `pipeline/02_preprocess/make_patch_points.py`: per tile PDAL `filters.hag_nn` (ground = class 2) on the whole tile, classes 18, 9 and 26 dropped, points assigned to the 50 m patches, stored per tile as `.npy` (x, y relative to the patch centre and HAG as float16, intensity, class), random order inside each patch. Index `data/processed/patch_points/index.parquet` (start, count, HAG range, split). 15–25 s per tile, 3 workers.
 

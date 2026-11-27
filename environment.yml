@@ -37,3 +37,7 @@ dependencies:
       - torchvision
       - laspy[lazrs]
       - open_clip_torch
+      # OpenShape PointBERT loader (pipeline/03_finetune/train.py); dgl is replaced by a PyTorch stub
+      - torch.redstone==0.0.6
+      - einops
+      - huggingface_hub

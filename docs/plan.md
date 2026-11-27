@@ -79,16 +79,17 @@ Evidence from LidarCLIP (Hess et al. 2023, Tab. 5, car-mounted LiDAR + camera, O
 | CLIP DOP embeddings on DOP 2024 (GeoRSCLIP, OpenCLIP H/14, SkyCLIP) | done |
 | Teacher choice | done: GeoRSCLIP ViT-H/14 (visual comparison) |
 | Geographic split (`make_split.py`, 2 km blocks, 70/10/20) | script written, to run |
-| Encoder choice | open |
-| Point cloud patches (HAG, 4096 points) | open |
+| Encoder choice | done (provisional): OpenShape PointBERT ViT-bigG/14, see `docs/encoder_comparison.md` |
+| Point cloud analysis (#7: CRS, density, classes, dates, points per patch) | done 2026-11-27, see `docs/results.md` |
+| Point cloud patches (HAG, 10,000 points, no RGB) | open; basis from #7: median 22,838 points per patch, 125 patches (0.17 %) below 10,000 |
 | Dülmen prototype training | open |
 | Münster data + training, evaluation on Dülmen | open |
 | Search index, backend, web app | open |
 | Report, final presentation | open |
 
 ## Open decisions
-- Point cloud encoder (pretrained ULIP-2 backbone vs. from scratch)
-- Patch size (50 m vs. larger for tall objects)
+- Patch size (50 m vs. larger for tall objects; #7: 50 m is well sampled, wind turbine rotors span several patches)
+- Sampling to 10,000 points (random vs. farthest point sampling / keep all points above ground, #7); handling of undocumented classes 9 and 14 and of class 26 (2011 data)
 - Münster: LiDAR and DOP years, data volume
 
 ## Timetable
@@ -96,5 +97,5 @@ Open until the submission deadline and the presentation dates are known. Planned
 
 ## Next 3 steps
 1. Run `make_split.py` and check the train / val / test areas on the map
-2. Choose the point cloud encoder and prepare point cloud patches (height above ground, e.g. 4096 points)
-3. Record the DOP baseline: top 10 per query on the test area with GeoRSCLIP, counted by hand
+2. Load OpenShape PointBERT on Colab and pass one Dülmen patch through it (10,000 points, fixed scale, RGB = constant)
+3. Write the point cloud patch script (height above ground, cut per patch, no RGB, drop noise, sampling that keeps tall structures, see #7 in `docs/results.md`) and run it on one tile

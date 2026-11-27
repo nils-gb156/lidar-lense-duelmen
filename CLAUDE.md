@@ -21,6 +21,7 @@ Context: M.Sc. course "Foundation Models & Embeddings for EO Analytics", ifgi, U
 | `docs/plan.md` | use case, hypotheses, target values, method, evaluation design, status, timetable, next steps |
 | `docs/results.md` | results with dates (feasibility, model comparison, baselines, metrics) |
 | `docs/literature.md` | notes on the papers (core idea, what is used, key facts with page/figure) |
+| `docs/encoder_comparison.md` | comparison of pretrained point cloud encoders and the reasons for the choice |
 | GitHub issues | concrete tasks (milestones M0–M8) |
 
 ## Repository structure
@@ -46,11 +47,13 @@ docs/              plan, results, literature notes, figures
 | `data/patches/` | `patch_index.parquet` (patch_id, tile, n_points, dop_file, dop_year, geometry), `images/` (DOP crops), `thumbs/` |
 | `data/embeddings/` | `dop_image_embeddings_<backbone>.npz` + `.meta.json` (DOP 2024: GeoRSCLIP, OpenCLIP ViT-H/14, SkyCLIP), `text_cache/`, `compare/`; `2026/` = old embeddings on DOP 2026 |
 | `data/models/` | checkpoints of the point cloud encoder (later) |
+| `data/analysis/laz/` | LAZ analysis (#7): `tiles/*.json` cache, `tile_stats.csv`, `patch_stats.parquet`, `summary.md` |
 
 Verified facts about the source data:
 - Tiles: 1 km × 1 km, EPSG:25832 (UTM 32N), 229 tiles intersect the Dülmen boundary (184.7 km²), 73,898 patches of 50 m.
-- LAZ: LAS 1.2, point format 1, 4–10 points/m², about 10 million points per tile, flight 2024 (GPS time of tile 380_5740: 17 March 2024; other tiles not checked).
-- LAZ classes (Nutzerinformationen 3D-Messdaten NRW, Stand 02/2020): 1 unclassified, 2 ground, 17 bridge, 18 noise, 20 last return not ground (buildings, cars, …), 24 basement, 26 synthetic ground. **There is no building class 6**; buildings are in class 20.
+- LAZ (all 229 tiles checked, #7): LAS 1.2, point format 1, scale 0.01 m, EPSG:25832 + DHHN2016 height (EPSG:7837), adjusted standard GPS time. 8.1–19.4 points/m² (median 10.5), 5.4–9.5 first returns/m² (median 8.4), 8–19 million points per tile. Flight dates from GPS time: 2024-03-09/10/16/17 (203 tiles) and 2024-12-01 (26 tiles).
+- 50 m patches: median 22,838 points (without noise), p1 16,904; only 59 of 73,898 patches have fewer than 4,096 points. Height range up to 116 m (wind turbines in 378_5749).
+- LAZ classes (Nutzerinformationen 3D-Messdaten NRW, Stand 02/2020): 1 unclassified, 2 ground, 17 bridge, 18 noise, 20 last return not ground (buildings, cars, …), 24 basement, 26 synthetic ground. **There is no building class 6**; buildings are in class 20. Classes 9 and 14 also occur but are not documented (meaning open). Classes 9 and 26 carry GPS times of 2011-09-14 (older fill data).
 - DOP: 4 bands (R, G, B, NIR), 0.1 m, 10,000 × 10,000 px per tile, uint8. 2024 tiles from `https://www.opengeodata.nrw.de/produkte/geobasis/lusat/hist/hist_dop/hist_dop_jp2_f10/hist_dop_2024/epsg_25832/`, all 229 Dülmen tiles available.
 - Licence of LAZ and DOP: Datenlizenz Deutschland – Zero – 2.0.
 - Open: exact DOP 2024 flight dates (in `dop_meta.zip` on the server).
@@ -78,9 +81,9 @@ Verified facts about the source data:
 | Study area | Dülmen municipal boundary (test area); Münster as training area (planned) |
 | DOP year | 2024, same year as the LiDAR; 2026 DOP dropped as training data because of changes between the flights (e.g. Solarpark Hausdülmen built 2025) |
 | Patch size | 50 m × 50 m (provisional; larger patches open for tall objects) |
-| Points per patch | 4096 (provisional, depends on encoder) |
+| Points per patch | 10,000 (OpenShape training setting); store more per patch, sample at training time |
 | CLIP teacher | **GeoRSCLIP ViT-H/14** (`RS5M_ViT-H-14.pt`, HF `Zilun/GeoRSCLIP`, 1024-dim), chosen 2026-11 by visual comparison of the top 10 with OpenCLIP ViT-H/14 and SkyCLIP ViT-L/14 on DOP 2024 (see `docs/results.md`). All later steps (training targets, search) use only this model. Licence of the weights still to be checked |
-| Point cloud encoder | open: pretrained backbone (e.g. ULIP-2) + fine-tuning, or small encoder from scratch |
+| Point cloud encoder | **OpenShape PointBERT** (variant aligned to OpenCLIP ViT-bigG/14, HF `OpenShape/openshape-pointbert-vitg14-rgb`), fine-tuned with a new 1024-dim projection head; provisional until a first patch runs through it. Input: 10,000 points, xyz with fixed scale (not unit ball), RGB filled with a constant (no DOP colours). Fallback: Uni3D-B. Comparison: `docs/encoder_comparison.md` |
 | Training loss | MSE (better than cosine in LidarCLIP, Tab. 4); contrastive loss not required |
 | Combined search | mean of DOP and LiDAR vector, then cosine similarity with the text vector (best joint method in LidarCLIP, Tab. 5) |
 | Embedding storage | per backbone `.npz` + `.meta.json` now; GeoParquet + FAISS for the search index later |

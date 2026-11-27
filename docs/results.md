@@ -2,6 +2,52 @@
 
 Newest results at the top of each section. All results so far are for the **teacher side** (CLIP on DOP); no point cloud encoder has been trained yet.
 
+## 2026-11-27 – Point cloud analysis, all 229 LAZ tiles (#7)
+Script: `pipeline/02_preprocess/analyse_laz.py` (every point of every tile read with laspy). Outputs: `data/analysis/laz/` (`tile_stats.csv`, `patch_stats.parquet`, `summary.md`), figures `docs/figures/laz_*.png`.
+
+**Format and CRS (all tiles identical):** LAS 1.2, point format 1, scale 0.01 m, EPSG:25832 + vertical EPSG:7837 (DHHN2016 height), adjusted standard GPS time. Header creation dates 2024-07-15 to 2026-05-11 are processing dates, not flight dates.
+
+**Points and density:**
+| | min | median | max |
+|---|---|---|---|
+| points per tile | 8.1 M | 10.5 M | 19.4 M |
+| all points per m² | 8.1 | 10.5 | 19.4 |
+| first returns per m² (≈ pulse density) | 5.4 | 8.4 | 9.5 |
+
+Total 2.56 billion points. Median 31.6 % of the points come from multi-return pulses (vegetation). The densest tiles (17–19 pts/m²) have many multiple returns, not more pulses. The December tiles have the lowest pulse density (5.4–7.0 /m²).
+
+**Classes:**
+| Class | Meaning (NRW user information 02/2020) | Share |
+|---|---|---|
+| 2 | ground | 67.7 % |
+| 1 | unclassified (vegetation, among others) | 26.2 % |
+| 20 | last return not ground (buildings, cars, …) | 5.8 % |
+| 26 | synthetic ground | 0.22 % |
+| 18 | noise | 0.02 % |
+| 9 | **not documented** | 0.02 % |
+| 14 | **not documented** | 0.01 % |
+| 17 | bridge | 0.01 % |
+| 24 | basement | 0.01 % |
+
+- Class 9 and class 26 carry GPS times of **2011-09-14** (older data filled in); for class 9 the 2011 count equals the class 9 count in every tile. Class 14 has 2024 GPS times. Meaning of classes 9 and 14 open (in ASPRS LAS: 9 water, 14 wire conductor; not verified for NRW).
+
+**Flight dates** (GPS time, UTC, without class 9 / 26): 2024-03-09 (134 tiles), 03-10 (15), 03-16 (37), 03-17 (17), 2024-12-01 (26, south-west of the town). 103 tiles contain points from more than one day (strip overlaps). This matches the per-tile metadata (203 tiles 9–17 March, 26 tiles 1 December). Both periods are leaf-off.
+
+**50 m patches inside the boundary (73,898), points without noise:**
+- min 1,809, p1 16,904, p5 18,464, median 22,838, p95 54,198, max 110,991
+- fewer than 4,096 points: 59 patches (0.08 %), fewer than 8,192: 111 (0.15 %), fewer than 10,000: 125 (0.17 %), mostly in a few tiles (e.g. `386_5747`, `374_5746`; probably water, not checked)
+- patches without a ground point: 24
+- height range (max z − mean ground z): median 11.2 m, p95 32.2 m, p99 37.4 m, max 116.2 m. 20,976 patches > 20 m, 6,344 > 30 m, 24 > 50 m (wind turbines in `377_5749`/`378_5749`)
+
+**Visualisation** (`laz_tile_32_378_5749.png`, `laz_patch_32_378_5749_05_06.png`): wind turbine patch with 23,178 points, of which only 98 lie more than 10 m above ground (90 of them above 50 m: nacelle and rotor at 100–115 m), almost no points on the tower. A random sample of 4,096 keeps on average about 17 of them, a random sample of 10,000 about 42. Rotor points spread over several neighbouring 50 m patches.
+
+**Consequences for preprocessing:**
+- Points per patch: 10,000 (OpenShape PointBERT, provisional encoder choice) means downsampling by about 2.3× (median); 4,096 would be about 5×. Only 125 patches (0.17 %) have fewer than 10,000 points and need padding/duplication.
+- Random downsampling drops thin tall structures (wind turbines, masts): use farthest point sampling or keep all points above ground, then sample the rest.
+- Use height above ground (HAG), not DHHN2016 heights: absolute heights range from 43 m to 180 m over Dülmen. Normalising z by the patch size (50 m) clips the 24 patches > 50 m; a fixed z-scale (e.g. divide by 50 m without clipping) keeps them.
+- Drop classes 18 (noise); keep 9 and 26 out of the training points or flag them, since they are not from 2024.
+- 50 m patch size: well sampled (≈ 23k points). Tall objects (turbines, church spires) are cut across patches, as already seen in the feasibility test; this supports testing larger or overlapping patches later.
+
 ## 2026-11-24 – Teacher choice: three CLIP models on DOP 2024 (visual)
 Setup: 73,898 DOP 2024 crops, prompt "an aerial photo of {query}", top 10 per model and query (`data/embeddings/compare/`). Counts = estimated correct hits out of 10, by eye.
 

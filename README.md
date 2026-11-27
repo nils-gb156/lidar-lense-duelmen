@@ -109,15 +109,23 @@ Known data details:
 |---|---|---|
 | Tile size | 1 km × 1 km | 1 km × 1 km |
 | CRS | EPSG:25832 (ETRS89 / UTM 32N) | EPSG:25832 |
-| Format | LAZ, LAS 1.2, point format 1 | JPEG2000, 4 bands (RGB + NIR), 0.1 m |
-| Tiles for Dülmen | 229 (15.8 GB) | 229 (7.5 GB) |
-| Height reference | DHHN2016 (normal heights) | – |
-| Acquisition date | 2024: 203 tiles 9–17 March, 26 tiles 1 December | 2026: 189 tiles 7 April (flight 1463/26), 35 tiles 5 March (1464/26); 2024: 5 tiles 26 June |
+| Format | LAZ, LAS 1.2, point format 1, scale 0.01 m | JPEG2000, 4 bands (RGB + NIR), 0.1 m |
+| Tiles for Dülmen | 229 (15.8 GB) | 229 (DOP 2024 from the historical archive) |
+| Height reference | DHHN2016 (EPSG:7837, in the LAZ GeoKeys) | – |
+| Acquisition date | 2024: 203 tiles 9–17 March, 26 tiles 1 December (confirmed by GPS time) | 2024, exact flight dates open |
 | Accuracy (official) | 0.30 m horizontal, 0.15 m vertical, 4 pts/m² nominal | 0.10 m ground pixel size |
+| Measured density | 10.5 pts/m² median (8.1–19.4), 8.4 first returns/m² (5.4–9.5) | – |
+| Points per 50 m patch | median 22,838 (p1 16,904, p95 54,198) | – |
 
-Source of the acquisition dates: per-tile metadata `3dm_meta.zip` and `dop_meta.zip` next to the `index.json` files on OpenGeodata NRW (state 2026-10-29 / 2026-10-21).
+Source of the acquisition dates: per-tile metadata `3dm_meta.zip` next to the `index.json` files on OpenGeodata NRW (state 2026-10-29), confirmed with the GPS times of all points.
 
-**Time gap:** the point clouds are from 2024 and most orthophotos are from 2026. Changes in between (new buildings, solar parks, felled forest) make image and point cloud disagree for some patches. This matters for fine-tuning, since the CLIP image embeddings are the training target.
+**Classes** (NRW user information 02/2020): 2 ground 67.7 %, 1 unclassified 26.2 %, 20 last return not ground (buildings, cars, …) 5.8 %, 26 synthetic ground 0.2 %, plus small shares of 17 bridge, 18 noise, 24 basement. There is no building class 6. Two classes not in the documentation also occur: 9 and 14 (0.02 % / 0.01 %). Classes 9 and 26 carry GPS times from 2011 (older data filled in).
+
+Full analysis (per tile, per patch, figures, consequences for preprocessing): `pipeline/02_preprocess/analyse_laz.py`, results in [docs/results.md](docs/results.md), figures in [docs/figures/](docs/figures/).
+
+![Pulse density and flight date per tile](docs/figures/laz_tiles_density_date.png)
+
+**Time gap:** an earlier version used the DOP 2026, which showed changes after the LiDAR flight (e.g. Solarpark Hausdülmen, built 2025). The project now uses the DOP 2024, the same year as the LiDAR. The exact DOP 2024 flight dates are still open, so the season may differ from the leaf-off LiDAR flights (March and December).
 
 ## Related work
 

@@ -337,9 +337,15 @@ def main() -> None:
             scaler.update()
             sched.step()
             losses.append(loss.item())
+            if step == 0:
+                # first step includes the start of the DataLoader workers (slow on Windows): time it separately
+                t_run, n_seen = time.time(), 0
+                print(f"  epoch {epoch} step 1/{steps_per_epoch} loss {losses[0]:.4f} "
+                      f"| first batch after {t_run - t0:.0f} s (worker start)", flush=True)
+                continue
             n_seen += len(pts)
             if step % 50 == 0 or step == steps_per_epoch - 1:
-                el = time.time() - t0
+                el = time.time() - t_run
                 print(f"  epoch {epoch} step {step + 1}/{steps_per_epoch} loss {np.mean(losses[-50:]):.4f} "
                       f"| {n_seen / el:.1f} patches/s", flush=True)
         t_train = time.time() - t0

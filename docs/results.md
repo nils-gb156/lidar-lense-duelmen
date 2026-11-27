@@ -2,6 +2,26 @@
 
 Newest results at the top of each section. All results so far are for the **teacher side** (CLIP on DOP); no point cloud encoder has been trained yet.
 
+## 2026-11-27 – Point arrays with height above ground for all patches (#10, #12)
+Script `pipeline/02_preprocess/make_patch_points.py`: per tile PDAL `filters.hag_nn` (ground = class 2) on the whole tile, classes 18, 9 and 26 dropped, points assigned to the 50 m patches, stored per tile as `.npy` (x, y relative to the patch centre and HAG as float16, intensity, class), random order inside each patch. Index `data/processed/patch_points/index.parquet` (start, count, HAG range, split). 15–25 s per tile, 3 workers.
+
+- All 73,898 patches of the index, 2.06 billion points, 18 GB. Median 22,739 points per patch.
+- Sparse patches: 17 without any point, 39 below 1,000, 77 below 4,096, 132 below 10,000. The ones below 1,000 cluster in tiles `386_5747` (18) and `377_5742` (13), the tiles with many class-9 points; probably water bodies (not checked against the DOP). Split of the < 1,000 patches: 20 train, 19 test.
+- HAG: −6.4 m to 113.2 m. 122,359 points (0.006 %) in 3,851 patches lie more than 0.5 m below ground; in the town tile `381_5743` 99 % of them are class 24 (basement), i.e. real below-ground points. Kept.
+- Check: wind turbine patch `32_378_5749_05_06` has the same 23,178 points as in the earlier test cut for the smoke test (one-off script with a 20 m HAG buffer, not kept).
+- Proposal: skip patches with < 1,000 points in training and evaluation (39 patches); fill patches with 1,000–10,000 points by repeating points.
+
+## 2026-11-27 – OpenShape PointBERT bigG smoke test on 6 ALS patches
+Setup (one-off test script and notebook, not kept in the repo; the same patches are now in `data/processed/patch_points/`): 6 patches, all points, HAG with PDAL `filters.hag_nn`, noise and classes 9/26 dropped, fed to the OpenShape loader (`openshape.load_pc_encoder`, dgl replaced by a PyTorch FPS). Run locally on the MX550 (torch 2.15.0+cu132), RGB = 0.4, 10,000 random points, layout (B, 6, N), z up.
+
+- **Loading works** on current PyTorch: loader from `OpenShape/openshape-demo-support`, dgl replaced by a PyTorch farthest point sampler stub, no `weights_only` workaround needed. 32.3 M parameters, output 1280-dim, finite.
+- **HAG check:** 12 points below −0.5 m (church patch, down to −2.6 m), otherwise clean.
+- **Sample stability** (cosine between two random 10,000-point samples of the same patch): 0.95–1.00. Lowest for the wind turbine (demo scaling 0.955, fixed scaling 0.978): with random sampling the few rotor points change from sample to sample, and the demo scaling (divide by the max radius) depends on them.
+- **Separation** (cosine between different patches, off-diagonal mean / min): demo 0.53 / 0.34, fixed 25 m 0.57 / 0.37, fixed 25 m with z centred 0.56 / 0.39. The pretrained features do separate the patch types (clearly below the sample stability). Church and forest are close (0.68–0.75), the two flat ground-only patches are identical (1.00).
+- **Scaling choice:** the three variants differ little. Fixed 25 m scale (x, y, HAG / 25 m) is chosen for the patch script, because it keeps absolute heights comparable between patches and is more stable for tall objects.
+- **Speed (MX550):** 334 ms per patch at batch 8, peak 1.7 GB → about 7 h for all 73,898 patches. Embedding and training run on the other PC.
+- Caveat: 6 patches only; this checks the pipeline, not the retrieval quality.
+
 ## 2026-11-27 – Point cloud analysis, all 229 LAZ tiles (#7)
 Script: `pipeline/02_preprocess/analyse_laz.py` (every point of every tile read with laspy). Outputs: `data/analysis/laz/` (`tile_stats.csv`, `patch_stats.parquet`, `summary.md`), figures `docs/figures/laz_*.png`.
 

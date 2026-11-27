@@ -51,7 +51,7 @@ Evidence from LidarCLIP (Hess et al. 2023, Tab. 5, car-mounted LiDAR + camera, O
 1. Data: LAZ 2024 + DOP 2024 (same flight year), 50 m patch grid (Dülmen: 73,898 patches)
 2. Teacher: frozen CLIP image encoder → one target vector per DOP crop (computed once)
 3. Filter: remove patches where DOP and point cloud do not match (check CLIP similarity vs. point cloud height statistics)
-4. Student: point cloud encoder (pretrained backbone or from scratch), input e.g. 4096 points per patch, trained with MSE loss to reproduce the target vector (MSE better than cosine in LidarCLIP, Tab. 4)
+4. Student: point cloud encoder (OpenShape PointBERT bigG + new 1024-dim head), input 10,000 points per patch (x, y, HAG / 25 m, RGB = 0.4), trained with MSE loss to reproduce the target vector (MSE better than cosine in LidarCLIP, Tab. 4)
 5. Embeddings: point cloud embeddings for all test patches → search index
 6. Search: text → CLIP text encoder (same CLIP model) → cosine similarity → ranking
 7. Evaluation (below), then backend and web app
@@ -81,7 +81,8 @@ Evidence from LidarCLIP (Hess et al. 2023, Tab. 5, car-mounted LiDAR + camera, O
 | Geographic split (`make_split.py`, 2 km blocks, 70/10/20) | script written, to run |
 | Encoder choice | done (provisional): OpenShape PointBERT ViT-bigG/14, see `docs/encoder_comparison.md` |
 | Point cloud analysis (#7: CRS, density, classes, dates, points per patch) | done 2026-11-27, see `docs/results.md` |
-| Point cloud patches (HAG, 10,000 points, no RGB) | open; basis from #7: median 22,838 points per patch, 125 patches (0.17 %) below 10,000 |
+| OpenShape PointBERT smoke test (6 patches) | done 2026-11-27: runs, fixed 25 m scale chosen |
+| Point cloud patches (#10 HAG, #12 cut): `make_patch_points.py` | done 2026-11-27: all 73,898 patches, all points stored (float16, 18 GB in `data/processed/patch_points/`); sampling to 10,000 at training time |
 | Dülmen prototype training | open |
 | Münster data + training, evaluation on Dülmen | open |
 | Search index, backend, web app | open |
@@ -96,6 +97,6 @@ Evidence from LidarCLIP (Hess et al. 2023, Tab. 5, car-mounted LiDAR + camera, O
 Open until the submission deadline and the presentation dates are known. Planned order: DOP 2024 embeddings → baseline A → encoder + point cloud patches → Dülmen prototype → Münster training + evaluation → search index, backend, web app → report and presentation.
 
 ## Next 3 steps
-1. Run `make_split.py` and check the train / val / test areas on the map
-2. Load OpenShape PointBERT on Colab and pass one Dülmen patch through it (10,000 points, fixed scale, RGB = constant)
-3. Write the point cloud patch script (height above ground, cut per patch, no RGB, drop noise, sampling that keeps tall structures, see #7 in `docs/results.md`) and run it on one tile
+1. Baseline A (#18): DOP search with GeoRSCLIP on the test area, top 10 per query counted by hand (reference for all later variants)
+2. Training PC: copy `data/processed/patch_points/`, `data/patches/patch_index.parquet` and `data/embeddings/dop_image_embeddings_georsclip.*`; set up the environment (#21)
+3. PyTorch dataset (#15) and fine-tuning script (#22): 10,000 random points per patch, x, y, HAG / 25 m, RGB 0.4, shuffled; target = GeoRSCLIP DOP vector; MSE; train split only, val for model selection; skip patches with < 1,000 points

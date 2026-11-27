@@ -46,6 +46,7 @@ docs/              plan, results, literature notes, figures
 | `data/raw/boundary/` | `duelmen_boundary.gpkg` (OSM, EPSG:25832) |
 | `data/patches/` | `patch_index.parquet` (patch_id, tile, n_points, dop_file, dop_year, geometry), `images/` (DOP crops), `thumbs/` |
 | `data/embeddings/` | `dop_image_embeddings_<backbone>.npz` + `.meta.json` (DOP 2024: GeoRSCLIP, OpenCLIP ViT-H/14, SkyCLIP), `text_cache/`, `compare/`; `2026/` = old embeddings on DOP 2026 |
+| `data/processed/patch_points/` | point arrays per tile (`<tile>_xyz.npy` float16 x, y rel. to patch centre + HAG; `_intensity.npy`, `_class.npy`), `index.parquet` (patch_id, start, count, HAG range, split), `meta.json`; from `make_patch_points.py` |
 | `data/models/` | checkpoints of the point cloud encoder (later) |
 | `data/analysis/laz/` | LAZ analysis (#7): `tiles/*.json` cache, `tile_stats.csv`, `patch_stats.parquet`, `summary.md` |
 
@@ -81,9 +82,9 @@ Verified facts about the source data:
 | Study area | Dülmen municipal boundary (test area); Münster as training area (planned) |
 | DOP year | 2024, same year as the LiDAR; 2026 DOP dropped as training data because of changes between the flights (e.g. Solarpark Hausdülmen built 2025) |
 | Patch size | 50 m × 50 m (provisional; larger patches open for tall objects) |
-| Points per patch | 10,000 (OpenShape training setting); store more per patch, sample at training time |
+| Points per patch | 10,000 (OpenShape training setting), drawn at training time from all stored points (random, shuffled order: OpenShape's ball query takes the first points in list order); x, y, HAG divided by 25 m; RGB = 0.4. Patches with < 1,000 points skipped (proposal, 39 patches) |
 | CLIP teacher | **GeoRSCLIP ViT-H/14** (`RS5M_ViT-H-14.pt`, HF `Zilun/GeoRSCLIP`, 1024-dim), chosen 2026-11 by visual comparison of the top 10 with OpenCLIP ViT-H/14 and SkyCLIP ViT-L/14 on DOP 2024 (see `docs/results.md`). All later steps (training targets, search) use only this model. Licence of the weights still to be checked |
-| Point cloud encoder | **OpenShape PointBERT** (variant aligned to OpenCLIP ViT-bigG/14, HF `OpenShape/openshape-pointbert-vitg14-rgb`), fine-tuned with a new 1024-dim projection head; provisional until a first patch runs through it. Input: 10,000 points, xyz with fixed scale (not unit ball), RGB filled with a constant (no DOP colours). Fallback: Uni3D-B. Comparison: `docs/encoder_comparison.md` |
+| Point cloud encoder | **OpenShape PointBERT** (variant aligned to OpenCLIP ViT-bigG/14, HF `OpenShape/openshape-pointbert-vitg14-rgb`), fine-tuned with a new 1024-dim projection head; smoke test on 6 Dülmen patches passed 2026-11-27 (one-off test, code not kept; results in `docs/results.md`). Input: 10,000 points, xyz with fixed scale (not unit ball), RGB filled with a constant (no DOP colours). Fallback: Uni3D-B. Comparison: `docs/encoder_comparison.md` |
 | Training loss | MSE (better than cosine in LidarCLIP, Tab. 4); contrastive loss not required |
 | Combined search | mean of DOP and LiDAR vector, then cosine similarity with the text vector (best joint method in LidarCLIP, Tab. 5) |
 | Embedding storage | per backbone `.npz` + `.meta.json` now; GeoParquet + FAISS for the search index later |

@@ -83,6 +83,7 @@ Evidence from LidarCLIP (Hess et al. 2023, Tab. 5, car-mounted LiDAR + camera, O
 | Point cloud analysis (#7: CRS, density, classes, dates, points per patch) | done 2026-11-27, see `docs/results.md` |
 | OpenShape PointBERT smoke test (6 patches) | done 2026-11-27: runs, fixed 25 m scale chosen |
 | Point cloud patches (#10 HAG, #12 cut): `make_patch_points.py` | done 2026-11-27: all 73,898 patches, all points stored (float16, 18 GB in `data/processed/patch_points/`); sampling to 10,000 at training time |
+| PyTorch dataset (#15): `pipeline/03_finetune/dataset.py` | done 2026-11-27: points (6, 10,000) + GeoRSCLIP target, train 50,020 / val 8,284 / test 15,555 patches (39 with < 1,000 points skipped); rotation/jitter optional, off by default |
 | Dülmen prototype training | open |
 | Münster data + training, evaluation on Dülmen | open |
 | Search index, backend, web app | open |
@@ -92,6 +93,7 @@ Evidence from LidarCLIP (Hess et al. 2023, Tab. 5, car-mounted LiDAR + camera, O
 - Patch size (50 m vs. larger for tall objects; #7: 50 m is well sampled, wind turbine rotors span several patches)
 - Sampling to 10,000 points (random vs. farthest point sampling / keep all points above ground, #7); handling of undocumented classes 9 and 14 and of class 26 (2011 data)
 - Münster: LiDAR and DOP years, data volume
+- Rotation augmentation: the DOP target is north-up and is not rotated with the points; test none vs. 90° steps in #22 (option: embed rotated DOP crops as matching targets)
 
 ## Timetable
 Open until the submission deadline and the presentation dates are known. Planned order: DOP 2024 embeddings → baseline A → encoder + point cloud patches → Dülmen prototype → Münster training + evaluation → search index, backend, web app → report and presentation.
@@ -99,4 +101,4 @@ Open until the submission deadline and the presentation dates are known. Planned
 ## Next 3 steps
 1. Baseline A (#18): DOP search with GeoRSCLIP on the test area, top 10 per query counted by hand (reference for all later variants)
 2. Training PC: copy `data/processed/patch_points/`, `data/patches/patch_index.parquet` and `data/embeddings/dop_image_embeddings_georsclip.*`; set up the environment (#21)
-3. PyTorch dataset (#15) and fine-tuning script (#22): 10,000 random points per patch, x, y, HAG / 25 m, RGB 0.4, shuffled; target = GeoRSCLIP DOP vector; MSE; train split only, val for model selection; skip patches with < 1,000 points
+3. Fine-tuning script (#22) on top of `pipeline/03_finetune/dataset.py`: MSE to the GeoRSCLIP DOP vector, train split only, val for model selection (matching recall@1), compare rotation augmentation none / 90° on val

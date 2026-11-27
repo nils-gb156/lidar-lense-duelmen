@@ -28,8 +28,8 @@ Context: M.Sc. course "Foundation Models & Embeddings for EO Analytics", ifgi, U
 ```
 pipeline/          Python pipeline (numbered steps)
   01_download/     tile list (make_tile_list.py), download (download_tiles.py), tiles_duelmen.csv
-  02_preprocess/   patch grid (make_patch_grid.py), DOP crops (extract_dop_patches.py), geographic split (make_split.py); later: HAG, point arrays
-  03_finetune/     encoder training (dataset, training, checkpoints) – not started
+  02_preprocess/   patch grid (make_patch_grid.py), DOP crops (extract_dop_patches.py), geographic split (make_split.py), LAZ analysis (analyse_laz.py), HAG + point arrays (make_patch_points.py)
+  03_finetune/     encoder training: PyTorch dataset (dataset.py); training script and checkpoints to come
   04_embed/        CLIP DOP embeddings per backbone, backbone comparison, DOP search
   05_evaluate/     evaluation of the LiDAR model – not started
 backend/           FastAPI search API – not started

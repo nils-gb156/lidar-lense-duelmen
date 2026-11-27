@@ -6,8 +6,9 @@ A point cloud encoder is trained so that 50 m × 50 m point cloud patches are em
 
 **Core concept (LidarCLIP-style distillation):**
 - **Teacher:** a frozen CLIP image encoder (GeoRSCLIP ViT-H/14) turns the orthophoto (DOP 2024) crop of each patch into a target vector. Computed once and stored. CLIP is never trained.
-- **Student (the model that is trained):** a point cloud encoder learns to output the same vector from the point cloud of the patch. Loss: MSE or cosine similarity on matching pairs (as in LidarCLIP, Hess et al. 2023), no labels needed.
-- **Search:** only point cloud embeddings + the CLIP text encoder of the same CLIP model. The DOP is not needed at search time (only as map layer / preview).
+- **Student (the model that is trained):** a point cloud encoder learns to output the same vector from the point cloud of the patch. Loss: MSE on matching pairs (in LidarCLIP, Hess et al. 2023, Tab. 4, MSE gave clearly better retrieval than cosine), no labels needed.
+- **Research question:** does combining point cloud and orthophoto embeddings improve text search compared to orthophoto embeddings alone? (LidarCLIP: P@10 0.94 combined vs. 0.86 image / 0.81 lidar, Tab. 5, car LiDAR.)
+- **Search:** point cloud embeddings, orthophoto embeddings or their combination (mean of both vectors), always with the text encoder of the same CLIP model. The DOP is not needed at search time (only as map layer / preview).
 - **Limit:** the encoder can only learn what CLIP recognises in the orthophotos. CLIP on DOP works well for flat concepts (forest, solar park, roundabout, parking lot) and poorly for tall vertical structures (church, wind turbine), see `docs/results.md`.
 - **Validation plan:** first a Dülmen prototype with a geographic split inside Dülmen; then train on Münster and test on all of Dülmen (unseen area). Details in `docs/plan.md`.
 
@@ -80,7 +81,8 @@ Verified facts about the source data:
 | Points per patch | 4096 (provisional, depends on encoder) |
 | CLIP teacher | **GeoRSCLIP ViT-H/14** (`RS5M_ViT-H-14.pt`, HF `Zilun/GeoRSCLIP`, 1024-dim), chosen 2026-11 by visual comparison of the top 10 with OpenCLIP ViT-H/14 and SkyCLIP ViT-L/14 on DOP 2024 (see `docs/results.md`). All later steps (training targets, search) use only this model. Licence of the weights still to be checked |
 | Point cloud encoder | open: pretrained backbone (e.g. ULIP-2) + fine-tuning, or small encoder from scratch |
-| Training loss | MSE or cosine similarity (LidarCLIP); contrastive loss not required |
+| Training loss | MSE (better than cosine in LidarCLIP, Tab. 4); contrastive loss not required |
+| Combined search | mean of DOP and LiDAR vector, then cosine similarity with the text vector (best joint method in LidarCLIP, Tab. 5) |
 | Embedding storage | per backbone `.npz` + `.meta.json` now; GeoParquet + FAISS for the search index later |
 | Point cloud serving | COPC, read per patch bounding box |
 | 3D viewer | deck.gl PointCloudLayer for patches; Potree/CesiumJS optional |

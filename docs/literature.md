@@ -14,11 +14,16 @@ Radford, A., Kim, J. W., Hallacy, C., Ramesh, A., Goh, G., Agarwal, S., Sastry, 
 Hess, G., Tonderski, A., Petersson, C., Åström, K., & Svensson, L. (2023). LidarCLIP or: How I learned to talk to point clouds. arXiv:2212.06858.
 
 - **Core idea:** there are no text–lidar datasets, but millions of image–lidar pairs. A lidar encoder is trained to reproduce the embedding of a frozen CLIP image encoder for the matching image; images act as intermediary between text and point clouds (Sec. 3, Fig. 2).
-- **Loss:** MSE or cosine similarity on matching pairs only (Eq. 3, 4). Advantage over contrastive loss: no large batch sizes needed; the goal is to map into an existing space, not to learn a new one (Sec. 3).
+- **Loss:** MSE or cosine similarity on matching pairs only (Eq. 3, 4). Advantage over contrastive loss: no large batch sizes needed; the goal is to map into an existing space, not to learn a new one (Sec. 3). MSE gives clearly better retrieval than cosine: P@10 0.869 vs. 0.781, P@100 0.810 vs. 0.748 (Tab. 4).
 - **Setup:** automotive dataset ONCE, about 1 million scenes, about 7 million image–lidar pairs; CLIP ViT-L/14 (d = 768); lidar encoder SST (Sec. 4). Point clouds are cropped to the camera field of view.
-- **Results:** lidar-based retrieval is generally on par with image-based retrieval, with complementary strengths; combining image and lidar scores improves both (abstract, Sec. 3.1).
+- **Results:** lidar-based retrieval is generally on par with image-based retrieval, with complementary strengths (abstract).
+- **Joint retrieval (most relevant for the project):** every tested way of combining image and lidar beats both single modalities (Tab. 5, ONCE val, mean over all prompts):
+  - image only P@10 0.856 / P@100 0.810; lidar only 0.813 / 0.803
+  - mean feature (average of image and lidar vectors, best) 0.944 / 0.876; mean score 0.919 / 0.874; mean ranking 0.888 / 0.854; re-ranking 0.875–0.925
+- Per category: objects (Tab. 2) P@10 image 0.84, lidar 0.92, joint 0.96 (lidar alone best for bus and cyclist); scene conditions (Tab. 3) image 0.95, lidar 0.67, joint 0.97.
+- Domain transfer to nuScenes (Tab. 6): lidar-only retrieval drops, the joint method stays robust and beats camera-only.
 - **Noise:** preprocessing errors and visibility differences between sensors are mitigated by the large number of training pairs (Sec. 3) – the project has far fewer pairs (≈ 74 k in Dülmen), hence pair filtering and Münster as additional training area.
-- **Used in the project:** the training concept (teacher–student distillation, MSE/cosine loss), joint retrieval as variant "combination". The published weights do not fit (automotive data, different CLIP model).
+- **Used in the project:** the training concept (teacher–student distillation, MSE loss), joint retrieval (mean of DOP and LiDAR vector) as variant "combination" and basis of the research question. The published weights do not fit (automotive data, different CLIP model).
 - **Figure for slides:** Fig. 2 (p. 3).
 
 ## Xue et al. (2023) – ULIP

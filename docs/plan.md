@@ -32,6 +32,11 @@ A user (e.g. municipality, planning office, OSM mapper) types a term such as "so
 ## Goal
 Text search in the Dülmen LiDAR point cloud, using a point cloud encoder that was trained only with CLIP embeddings of orthophotos as teacher (no labels).
 
+## Research question
+Does combining point cloud and orthophoto embeddings improve text search compared to orthophoto embeddings alone?
+
+Evidence from LidarCLIP (Hess et al. 2023, Tab. 5, car-mounted LiDAR + camera, ONCE val, mean over all prompts): P@10 image only 0.856, lidar only 0.813, combined (mean of features) 0.944. Open: whether this transfers to airborne LiDAR + orthophotos with ≈ 74 k instead of ≈ 7 M pairs.
+
 ## Hypotheses
 - **H1:** A point cloud encoder trained only with DOP-CLIP targets enables text search in the point cloud that is comparable to CLIP search on the DOP.
 - **H2:** An encoder trained on Münster works in Dülmen, an area it has never seen.
@@ -46,7 +51,7 @@ Text search in the Dülmen LiDAR point cloud, using a point cloud encoder that w
 1. Data: LAZ 2024 + DOP 2024 (same flight year), 50 m patch grid (Dülmen: 73,898 patches)
 2. Teacher: frozen CLIP image encoder → one target vector per DOP crop (computed once)
 3. Filter: remove patches where DOP and point cloud do not match (check CLIP similarity vs. point cloud height statistics)
-4. Student: point cloud encoder (pretrained backbone or from scratch), input e.g. 4096 points per patch, trained with MSE / cosine loss to reproduce the target vector
+4. Student: point cloud encoder (pretrained backbone or from scratch), input e.g. 4096 points per patch, trained with MSE loss to reproduce the target vector (MSE better than cosine in LidarCLIP, Tab. 4)
 5. Embeddings: point cloud embeddings for all test patches → search index
 6. Search: text → CLIP text encoder (same CLIP model) → cosine similarity → ranking
 7. Evaluation (below), then backend and web app
@@ -62,7 +67,7 @@ Text search in the Dülmen LiDAR point cloud, using a point cloud encoder that w
   - Baseline B: hand-crafted height features (no deep learning)
   - Baseline C: point cloud encoder before training
   - LiDAR model (Dülmen prototype / Münster-trained)
-  - Combination: DOP score + LiDAR score
+  - Combination: mean of DOP and LiDAR vector, then cosine similarity with the text vector (best joint method in LidarCLIP, Tab. 5)
 
 ## Status
 | Step | Status |

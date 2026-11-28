@@ -85,7 +85,7 @@ Evidence from LidarCLIP (Hess et al. 2023, Tab. 5, car-mounted LiDAR + camera, O
 | Point cloud patches (#10 HAG, #12 cut): `make_patch_points.py` | done 2026-11-27: all 73,898 patches, all points stored (float16, 18 GB in `data/processed/patch_points/`); sampling to 10,000 at training time |
 | PyTorch dataset (#15): `pipeline/03_finetune/dataset.py` | done 2026-11-27: points (6, 10,000) + GeoRSCLIP target, train 50,020 / val 8,284 / test 15,555 patches (39 with < 1,000 points skipped); rotation/jitter optional, off by default |
 | Fine-tuning script (#22): `pipeline/03_finetune/train.py` | written and tested on the laptop with few patches 2026-11-27 (loop, validation, checkpoints, resume); full training on the training PC open |
-| Dülmen prototype training | open |
+| Dülmen prototype training | first run `dl_v1` done 2026-11-28 (RTX 3060 Ti, 15 epochs, 4.5 h): val loss 0.101 vs. 0.164 mean-vector reference, recall@1 0.009 (70× chance); see `docs/results.md`. Text search check open |
 | Münster data + training, evaluation on Dülmen | open |
 | Search index, backend, web app | open |
 | Report, final presentation | open |
@@ -102,4 +102,4 @@ Open until the submission deadline and the presentation dates are known. Planned
 ## Next 3 steps
 1. Baseline A (#18): DOP search with GeoRSCLIP on the test area, top 10 per query counted by hand (reference for all later variants)
 2. Training PC: copy `data/processed/patch_points/`, `data/patches/patch_index.parquet` and `data/embeddings/dop_image_embeddings_georsclip.*`; set up the environment (#21)
-3. First full training run on the training PC (#22): `python pipeline/03_finetune/train.py --run-name dl_v1`; first check that val loss drops below the mean-vector reference (0.164) and recall@1 rises above chance; then compare rotation augmentation none / 90° on val and tune learning rates
+3. LiDAR embeddings with `dl_v1/best.pt` for the val patches, then text search on the val area with the GeoRSCLIP text encoder: top 10 per query for LiDAR, DOP and the mean of both, side by side. Only after that: further runs (rotation augmentation, learning rates) if the search shows a need

@@ -2,6 +2,25 @@
 
 Newest results at the top of each section. All results so far are for the **teacher side** (CLIP on DOP); no point cloud encoder has been trained yet.
 
+## 2026-11-28 – First full training run `dl_v1` (#22)
+`pipeline/03_finetune/train.py --run-name dl_v1 --epochs 15 --batch-size 16 --workers 8`; RTX 3060 Ti (8 GB), torch 2.15.0+cu132, bf16, no augmentation, head lr 1e-4, backbone lr 2e-5, epoch 0 head only, cosine schedule. 50,020 train / 8,284 val patches. Duration about 4.5 h (epoch 0: 11 min, full epochs 15 min + 2 min validation, about 55 patches/s; peak GPU memory about 4.5 GB). Folder `data/models/dl_v1/` (`best.pt` = epoch 9).
+
+| Epoch | Train loss | Val loss | Val cos | r@1 | r@5 | r@10 | Median rank |
+|---|---|---|---|---|---|---|---|
+| mean-vector reference | | 0.164 | 0.914 | 0.0001 (chance) | 0.0006 | 0.0012 | ≈ 4,142 |
+| 0 (head only, backbone frozen) | 0.166 | 0.142 | 0.927 | 0.002 | 0.014 | 0.023 | 1,155 |
+| 1 | 0.106 | 0.107 | 0.945 | 0.003 | 0.020 | 0.035 | 1,024 |
+| 4 | 0.096 | 0.105 | 0.946 | 0.006 | 0.032 | 0.048 | 913 |
+| 7 | 0.093 | 0.101 | 0.948 | 0.008 | 0.037 | 0.057 | 911 |
+| **9 (best.pt)** | 0.091 | 0.102 | 0.948 | **0.009** | 0.038 | 0.059 | 868 |
+| 14 (last) | 0.089 | 0.101 | 0.948 | 0.008 | 0.042 | 0.063 | 847 |
+
+- **The encoder learns:** val loss 0.101 vs. 0.164 for the mean vector, i.e. about 39 % of the patch-specific part of the target (the deviation from the mean) is reproduced. Recall@1 is about 70× chance, recall@10 about 50× chance; the own DOP vector is in the top 10 % (median rank ≈ 850 of 8,284).
+- **Fine-tuning matters:** the head on frozen pretrained features (epoch 0) reaches val loss 0.142; fine-tuning the backbone brings it to 0.101.
+- **Plateau from about epoch 7**, while train loss keeps falling slowly (0.093 → 0.089): mild overfitting, no collapse. More epochs with this setup would not help.
+- **Matching recall@1 is low in absolute terms.** Likely reasons (interpretation, not checked): many val patches look alike (fields, forest) and have almost the same DOP vector, so the exact own patch is hard to single out; and part of the DOP embedding encodes colour and texture (crop state, roof colour, shadows) that the point cloud does not contain. Whether the embeddings are useful for **text search** is not answered by these metrics: next step is text queries on the val area, LiDAR vs. DOP.
+- Model selection by r@1 is noisy at this level (0.0087 vs. 0.0080 = 6 patches); val loss and r@10 point to epochs 7–14 as about equal.
+
 ## 2026-11-27 – Training script test runs on the laptop (#22, not a training result)
 Script `pipeline/03_finetune/train.py` with `dataset.py`; MX550, bf16, only 64–512 train patches, 2–4 epochs. Purpose: check that the loop, validation, checkpoints and resume work. The metrics of these tiny runs say nothing about the model.
 
